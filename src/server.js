@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 require('dotenv').config();
+const { connectDB, sequelize } = require('./config/db');
 
 const app = express();
 
@@ -21,6 +22,9 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
 });
+
+connectDB();
+sequelize.sync({ alter: true });
 
 const PORT = process.env.PORT || 3000;
 
