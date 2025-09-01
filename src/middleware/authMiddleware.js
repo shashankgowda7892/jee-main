@@ -1,6 +1,6 @@
-const { verifyToken } = require('../utils/jwt');
+const { verifyToken } = require('../utils/jwtHelper');
 
-function authMiddleware(req, res, next) {
+const authMiddleware = (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1];
 
   if (!token) {
@@ -14,6 +14,6 @@ function authMiddleware(req, res, next) {
 
   req.user = decoded;
   next();
-}
+};
 
 module.exports = authMiddleware;
