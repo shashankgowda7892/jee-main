@@ -25,6 +25,16 @@ const Exam = sequelize.define('Exam', {
     type: DataTypes.DATE,
     allowNull: false
   },
+  marksPerQuestion: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 4
+  },
+  negativeMarks: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: -1
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
