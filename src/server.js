@@ -2,8 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 require('dotenv').config();
-const { connectDB, sequelize } = require('./config/db');
+const { connectDB } = require('./config/db');
 const { connectRedis, client: redisClient } = require('./config/redis');
+const { syncModels } = require('./models');
 
 const app = express();
 
@@ -28,7 +29,7 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     await connectDB();
-    await sequelize.sync({ alter: true });
+    await syncModels();
     await connectRedis();
 
     const PORT = process.env.PORT || 3000;
