@@ -1,16 +1,18 @@
-const redis = require('redis');
+const Redis = require('ioredis');
 require('dotenv').config();
 
 const REDIS_PORT = process.env.REDIS_PORT;
 const REDIS_HOST = process.env.REDIS_HOST;
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 
-const client = redis.createClient({
-  socket: {
-    host: REDIS_HOST,
-    port: REDIS_PORT
-  },
-  password: REDIS_PASSWORD
+const client = new Redis({
+  host: REDIS_HOST,
+  port: REDIS_PORT,
+  password: REDIS_PASSWORD,
+  retryDelayOnFailover: 100,
+  enableOfflineQueue: false,
+  maxRetriesPerRequest: 3,
+  lazyConnect: true
 });
 
 client.on('connect', () => {
