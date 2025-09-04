@@ -5,6 +5,7 @@ require('dotenv').config();
 const { connectDB } = require('./config/db');
 const { connectRedis, client: redisClient } = require('./config/redis');
 const { syncModels } = require('./models');
+const routes = require('./routes');
 
 const app = express();
 
@@ -16,8 +17,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to the API' });
+  res.json({ message: 'Welcome to the JEE Main Exam API' });
 });
+
+// API Routes
+app.use('/api', routes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
