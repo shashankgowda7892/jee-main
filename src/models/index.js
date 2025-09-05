@@ -1,6 +1,7 @@
 const { sequelize } = require('../config/db');
 
 const User = require('./User');
+const Admin = require('./Admin');
 const Exam = require('./Exam');
 const Question = require('./Question');
 const StudentAnswer = require('./StudentAnswer');
@@ -17,6 +18,7 @@ const syncModels = async () => {
 
 module.exports = {
   User,
+  Admin,
   Exam,
   Question,
   StudentAnswer,

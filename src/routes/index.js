@@ -3,9 +3,11 @@ const router = express.Router();
 
 // Import route modules
 const authRoutes = require('./authRoutes');
+const adminRoutes = require('./adminRoutes');
 
 // Use route modules
 router.use('/auth', authRoutes);
+router.use('/admin', adminRoutes);
 
 // Health check route
 router.get('/health', (req, res) => {
