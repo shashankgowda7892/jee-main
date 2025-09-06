@@ -15,8 +15,24 @@ const Question = sequelize.define('Question', {
     type: DataTypes.STRING(50),
     allowNull: false,
   },
-  questionImage: {
-    type: DataTypes.BLOB,
+  question: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  option1: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  option2: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  option3: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  option4: {
+    type: DataTypes.TEXT,
     allowNull: false,
   },
   correctAnswer: {
