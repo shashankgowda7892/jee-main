@@ -75,6 +75,22 @@ const uploadQuestions = async (req, res) => {
   }
 };
 
+const getExams = async (req, res) => {
+  try {
+    const exams = await Exam.findAll();
+    res.status(200).json({
+      success: true,
+      data: exams
+    });
+  } catch (error) {
+    console.error('Error fetching exams:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   getUsers,
   uploadQuestions
