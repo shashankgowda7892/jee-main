@@ -12,5 +12,6 @@ const upload = multer({ storage });
 router.post('/login', adminAuthController.adminLogin);
 router.get('/users',authMiddleware, adminController.getUsers);
 router.post('/questions/upload',authMiddleware,upload.single('file'), adminController.uploadQuestions);
+router.post('/update/exam',authMiddleware, adminController.updateExam);
 
 module.exports = router;
