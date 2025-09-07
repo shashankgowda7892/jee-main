@@ -1,6 +1,6 @@
 const { Readable } = require("stream");
 const csv = require("csv-parser");
-const { User,Question } = require('../models');
+const { User,Question,Exam } = require('../models');
 
 const getUsers = async (req, res) => {
   try {
@@ -22,7 +22,7 @@ const getUsers = async (req, res) => {
 
 const uploadQuestions = async (req, res) => {
   try {
-    const { examCode } = req.body;
+    const { examCode, duration, totalQuestions, examDate } = req.body;
 
     if (!req.file) {
       return res.status(400).json({
@@ -52,7 +52,12 @@ const uploadQuestions = async (req, res) => {
         });
       })
       .on('end', async () => {
-
+        await Exam.create({
+          examCode,
+          duration,
+          totalQuestions,
+          examDate
+        });
         const insertedQuestions = await Question.bulkCreate(questions);
 
         res.status(200).json({
