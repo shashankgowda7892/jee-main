@@ -91,7 +91,30 @@ const getExams = async (req, res) => {
   }
 };
 
+const updateExam = async (req, res) => {
+  try {
+    const { examId, ...updateData } = req.body;
+
+    await Exam.update(updateData, {
+      where: { examId }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Exam updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating exam:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   getUsers,
-  uploadQuestions
+  uploadQuestions,
+  getExams,
+  updateExam
 };
