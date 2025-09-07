@@ -20,6 +20,7 @@
   "homepage": "https://github.com/shashankgowda7892/jee-main#readme",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "bull": "^4.16.5",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.1",
@@ -29,7 +30,8 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "mysql2": "^3.14.4",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
