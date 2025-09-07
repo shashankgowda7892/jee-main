@@ -1,5 +1,6 @@
 const { Readable } = require("stream");
 const csv = require("csv-parser");
+const { Op } = require('sequelize');
 const { User,Question,Exam } = require('../models');
 
 const getUsers = async (req, res) => {
@@ -75,6 +76,39 @@ const uploadQuestions = async (req, res) => {
   }
 };
 
+const getExams = async (req, res) => {
+  try {
+
+    const {search} = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const exams = await Exam.findAll({
+      offset,
+      limit,
+      order: [
+      ['examDate', 'DESC']
+      ],
+      where:search ? {
+        examCode: {
+          [Op.like]: `%${search}%`
+        }
+      } : {}
+    });
+    res.status(200).json({
+      success: true,
+      data: exams
+    });
+  } catch (error) {
+    console.error('Error fetching exams:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 const updateExam = async (req, res) => {
   try {
     const { examId, ...updateData } = req.body;
@@ -99,5 +133,6 @@ const updateExam = async (req, res) => {
 module.exports = {
   getUsers,
   uploadQuestions,
+  getExams,
   updateExam
 };
