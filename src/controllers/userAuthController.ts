@@ -1,17 +1,32 @@
-const { User } = require('../models');
-const { generateToken } = require('../utils/jwtHelper');
+import { Request, Response } from 'express';
+import { User } from '../models';
+import { generateToken } from '../utils/jwtHelper';
+import { ApiResponse } from '../types';
+
+interface LoginRequest {
+  studentNumber: string;
+  dateOfBirth: string;
+}
+
+interface RegisterRequest {
+  studentNumber: string;
+  name: string;
+  phone: string;
+  dateOfBirth: string;
+}
 
 // Login method
-const login = async (req, res) => {
+export const login = async (req: Request<{}, ApiResponse, LoginRequest>, res: Response<ApiResponse>): Promise<void> => {
   try {
     const { studentNumber, dateOfBirth } = req.body;
 
     // Validate input
     if (!studentNumber || !dateOfBirth) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Student number and date of birth are required'
       });
+      return;
     }
 
     // Find user by student number
@@ -23,18 +38,21 @@ const login = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
+      return;
     }
 
     // Verify date of birth (as password)
+    const userDateOfBirth = user.dateOfBirth.toISOString().split('T')[0];
     if (userDateOfBirth !== dateOfBirth) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
+      return;
     }
 
     // Update last login timestamp
@@ -42,7 +60,7 @@ const login = async (req, res) => {
 
     // Generate JWT token
     const tokenPayload = {
-      userId: user.userId
+      userId : user.userId
     };
 
     const token = generateToken(tokenPayload);
@@ -72,17 +90,18 @@ const login = async (req, res) => {
   }
 };
 
-// Register method (if needed)
-const register = async (req, res) => {
+// Register method
+export const register = async (req: Request<{}, ApiResponse, RegisterRequest>, res: Response<ApiResponse>): Promise<void> => {
   try {
     const { studentNumber, name, phone, dateOfBirth } = req.body;
 
     // Validate input
     if (!studentNumber || !name || !phone || !dateOfBirth) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'All fields are required'
       });
+      return;
     }
 
     // Check if user already exists
@@ -91,24 +110,25 @@ const register = async (req, res) => {
     });
 
     if (existingUser) {
-      return res.status(409).json({
+      res.status(409).json({
         success: false,
         message: 'User with this student number already exists'
       });
+      return;
     }
 
     // Create new user (dateOfBirth is used as password verification)
-    const newUser = await User.create({
+    await User.create({
       studentNumber,
       name,
       phone,
-      dateOfBirth
+      dateOfBirth: new Date(dateOfBirth)
     });
 
     // Return success response
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'User registered successfully'
     });
 
   } catch (error) {
@@ -118,9 +138,4 @@ const register = async (req, res) => {
       message: 'Internal server error'
     });
   }
-};
-
-module.exports = {
-  login,
-  register
 };

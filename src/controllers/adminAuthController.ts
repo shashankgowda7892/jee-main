@@ -1,39 +1,50 @@
-const { Admin } = require('../models');
-const { generateToken } = require('../utils/jwtHelper');
+import { Request, Response } from 'express';
+import { Admin } from '../models';
+import { generateToken } from '../utils/jwtHelper';
+import { ApiResponse } from '../types';
+
+interface AdminLoginRequest {
+  email: string;
+  password: string;
+}
 
 // Admin login method
-const adminLogin = async (req, res) => {
+export const adminLogin = async (req: Request<{}, ApiResponse, AdminLoginRequest>, res: Response<ApiResponse>): Promise<void> => {
   try {
     const { email, password } = req.body;
 
     // Validate input
     if (!email || !password) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
-        message: 'Admin number and date of birth are required'
+        message: 'Email and password are required'
       });
+      return;
     }
 
-    // Find admin by admin number
+    // Find admin by email
     const admin = await Admin.findOne({
       where: { 
-        emailId: email
+        emailId: email,
+        isActive: true
       }
     });
 
     if (!admin) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
+      return;
     }
     
     const isPasswordValid = await admin.checkPassword(password);
     if (!isPasswordValid) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
+      return;
     }
 
     const tokenPayload = {
@@ -61,8 +72,4 @@ const adminLogin = async (req, res) => {
       message: 'Internal server error'
     });
   }
-};
-
-module.exports = {
-    adminLogin
 };
