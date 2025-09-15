@@ -1,53 +1,27 @@
-import { Question, StudentAnswer } from '../models';
-import { QueryTypes } from 'sequelize';
+import { QuestionDto } from '../types';
+import { IQuestionRepository, QuestionRepository } from '../repositories/questionRepository';
 
-export interface QuestionResponse {
-  questionId: number;
-  question: string;
-  option1: string;
-  option2: string;
-  option3: string;
-  option4: string;
-  subject: string;
-  examId: number;
-  selectedAnswer: number; // 0 if not answered, 1-4 if answered
+export interface IQuestionService {
+  getAllQuestionsWithAnswers(examId: number, userId: number): Promise<QuestionDto[]>;
 }
 
-export class QuestionService {
+export class QuestionService implements IQuestionService {
+  private questionRepository: IQuestionRepository;
+
+  constructor(questionRepository: IQuestionRepository = new QuestionRepository()) {
+    this.questionRepository = questionRepository;
+  }
+
   /**
-   * Get all questions for an exam with selected answers using SQL query
+   * Get all questions for an exam with selected answers
    */
-  static async getAllQuestionsWithAnswers(examId: number, userId: number): Promise<QuestionResponse[]> {
-    try {
-      const query = `
-        SELECT 
-          q.questionId,
-          q.question,
-          q.option1,
-          q.option2,
-          q.option3,
-          q.option4,
-          q.subject,
-          q.examId,
-          COALESCE(sa.selectedAnswer, 0) as selectedAnswer
-        FROM questions q
-        LEFT JOIN student_answers sa ON q.questionId = sa.questionId 
-          AND sa.studentId = :userId 
-          AND sa.examId = :examId
-        WHERE q.examId = :examId 
-          AND q.isActive = 1
-        ORDER BY q.subject ASC, q.questionId ASC
-      `;
+  async getAllQuestionsWithAnswers(examId: number, userId: number): Promise<QuestionDto[]> {
+    return await this.questionRepository.findQuestionsWithAnswers(examId, userId);
+  }
 
-      const results = await Question.sequelize?.query(query, {
-        replacements: { examId, userId },
-        type: QueryTypes.SELECT
-      }) as QuestionResponse[];
-
-      return results || [];
-    } catch (error) {
-      console.error('Error fetching questions with answers:', error);
-      throw new Error('Failed to fetch questions with answers');
-    }
+  // Static method for backward compatibility
+  static async getAllQuestionsWithAnswers(examId: number, userId: number): Promise<QuestionDto[]> {
+    const service = new QuestionService();
+    return await service.getAllQuestionsWithAnswers(examId, userId);
   }
 }
