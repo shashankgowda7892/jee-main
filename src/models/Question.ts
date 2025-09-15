@@ -3,7 +3,7 @@ import { sequelize } from '../config/db';
 
 interface QuestionAttributes {
   questionId: number;
-  examCode: string;
+  examId: number;
   subject: string;
   question: string;
   option1: string;
@@ -20,7 +20,7 @@ interface QuestionCreationAttributes extends Optional<QuestionAttributes, 'quest
 
 class Question extends Model<QuestionAttributes, QuestionCreationAttributes> implements QuestionAttributes {
   public questionId!: number;
-  public examCode!: string;
+  public examId!: number;
   public subject!: string;
   public question!: string;
   public option1!: string;
@@ -40,8 +40,8 @@ Question.init({
     primaryKey: true,
     autoIncrement: true
   },
-  examCode: {
-    type: DataTypes.STRING(20),
+  examId: {
+    type: DataTypes.INTEGER,
     allowNull: false,
   },
   subject: {
@@ -82,13 +82,13 @@ Question.init({
   timestamps: true,
   indexes: [
     {
-      fields: ['examCode']
+      fields: ['examId']
     },
     {
       fields: ['subject']
     },
     {
-      fields: ['examCode', 'subject']
+      fields: ['examId', 'subject']
     },
   ]
 });

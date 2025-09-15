@@ -57,11 +57,8 @@ export const adminLogin = async (req: Request<{}, ApiResponse, AdminLoginRequest
       success: true,
       message: 'Admin login successful',
       data: {
-        token,
-        admin: {
-          adminId: admin.adminId,
-          email: admin.emailId,
-        }
+        accessToken : token,
+        userId : admin.adminId
       }
     });
 

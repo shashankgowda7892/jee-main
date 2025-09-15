@@ -5,6 +5,7 @@ import Admin from '../models/Admin';
 import Exam from '../models/Exam';
 import Question from '../models/Question';
 import StudentAnswer from '../models/StudentAnswer';
+import StudentExam from '../models/StudentExam';
 
 export const syncModels = async (): Promise<void> => {
   try {
@@ -22,5 +23,6 @@ export {
   Exam,
   Question,
   StudentAnswer,
+  StudentExam,
   sequelize
 };

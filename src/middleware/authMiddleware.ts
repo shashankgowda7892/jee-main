@@ -50,7 +50,10 @@ const authMiddleware = async (req: AuthenticatedRequest, res: Response<ApiRespon
             success: false,
             message: 'Admin not found or inactive'
           });
-          return;
+          
+          req.user = {
+            userId: decoded.adminId
+          };
         }
       } else {
       res.status(401).json({

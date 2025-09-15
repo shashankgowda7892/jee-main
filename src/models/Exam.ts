@@ -60,9 +60,6 @@ Exam.init({
   timestamps: true,
   indexes: [
     {
-      fields: ['examCode']
-    },
-    {
       fields: ['isActive']
     }
   ]

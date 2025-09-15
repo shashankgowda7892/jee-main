@@ -46,7 +46,7 @@ export const login = async (req: Request<{}, ApiResponse, LoginRequest>, res: Re
     }
 
     // Verify date of birth (as password)
-    const userDateOfBirth = user.dateOfBirth.toISOString().split('T')[0];
+    const userDateOfBirth = new Date(user.dateOfBirth).toISOString().split("T")[0];
     if (userDateOfBirth !== dateOfBirth) {
       res.status(401).json({
         success: false,
@@ -70,7 +70,7 @@ export const login = async (req: Request<{}, ApiResponse, LoginRequest>, res: Re
       success: true,
       message: 'Login successful',
       data: {
-        token,
+        accessToken: token,
         user: {
           userId: user.userId,
           studentNumber: user.studentNumber,

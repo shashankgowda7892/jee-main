@@ -4,7 +4,7 @@ import { sequelize } from '../config/db';
 interface StudentAnswerAttributes {
   answerId: number;
   studentId: number;
-  examCode: string;
+  examId: number;
   questionId: number;
   selectedAnswer?: number;
   isCorrect?: boolean;
@@ -17,7 +17,7 @@ interface StudentAnswerCreationAttributes extends Optional<StudentAnswerAttribut
 class StudentAnswer extends Model<StudentAnswerAttributes, StudentAnswerCreationAttributes> implements StudentAnswerAttributes {
   public answerId!: number;
   public studentId!: number;
-  public examCode!: string;
+  public examId!: number;
   public questionId!: number;
   public selectedAnswer?: number;
   public isCorrect?: boolean;
@@ -36,8 +36,8 @@ StudentAnswer.init({
     type: DataTypes.INTEGER,
     allowNull: false
   },
-  examCode: {
-    type: DataTypes.STRING(20),
+  examId: {
+    type: DataTypes.INTEGER,
     allowNull: false,
   },
   questionId: {
@@ -58,10 +58,10 @@ StudentAnswer.init({
   timestamps: true,
   indexes: [
     {
-      fields: ['studentId', 'examCode']
+      fields: ['studentId', 'examId']
     },
     {
-      fields: ['examCode']
+      fields: ['examId']
     }
   ]
 });
