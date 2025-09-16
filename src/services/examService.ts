@@ -80,8 +80,8 @@ export class ExamService implements IExamService {
         q.correctAnswer,
         q.subject,
         COALESCE(sa.selectedAnswer, 0) as selectedAnswer
-      FROM Questions q
-      LEFT JOIN StudentAnswers sa ON q.questionId = sa.questionId 
+      FROM questions q
+      LEFT JOIN student_answers sa ON q.questionId = sa.questionId 
         AND sa.studentId = :userId 
         AND sa.examId = :examId
       WHERE q.examId = :examId
