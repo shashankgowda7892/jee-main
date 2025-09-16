@@ -9,6 +9,7 @@ router.get('/exams', authMiddleware, userController.getUserExams);
 router.post('/exam/start', authMiddleware, userController.startExam);
 router.post('/exam/answer', authMiddleware, userController.submitAnswer);
 router.post('/exam/finish', authMiddleware, userController.finishExam);
+router.get('/exam/result', userController.downloadResultPdf);
 
 
 export default router;

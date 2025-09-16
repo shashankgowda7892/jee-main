@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Exam } from '../models';
-import { sequelize } from '../config/db';
+import { verifyToken } from '../utils/jwtHelper';
 import { 
   ApiResponse, 
   AuthenticatedRequest, 
@@ -171,5 +171,52 @@ export const finishExam = async (req: AuthenticatedRequest, res: Response<ApiRes
   } catch (error) {
     console.error('Finish exam error:', error);
     ResponseUtils.handleUnknownError(res, error);
+  }
+};
+
+export const downloadResultPdf = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const token = req.query.token as string;
+    if (!token) {
+      res.status(ErrorCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Authentication token is required'
+      });
+      return;
+    }
+
+
+    const decoded = verifyToken(token);
+
+    const userId = decoded?.userId;
+    const examId = decoded?.examId;
+
+    if (typeof userId !== 'number' || typeof examId !== 'number') {
+      res.status(ErrorCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Invalid userId or examId in token'
+      });
+      return;
+    }
+
+    // Use exam service to generate PDF
+    const examService = ServiceFactory.getExamService();
+    const pdfBuffer = await examService.getResultPdfService(userId, examId);
+
+    // Set response headers for forced PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="exam-result-${examId}-${userId}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.setHeader('Cache-Control', 'no-cache');
+
+    // Send PDF buffer directly to force download
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('Download result PDF error:', error);
+    res.status(ErrorCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to generate result PDF'
+    });
   }
 };

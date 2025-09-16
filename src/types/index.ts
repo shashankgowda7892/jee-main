@@ -25,6 +25,7 @@ export interface RedisConfig {
 export interface JWTPayload {
     userId?: number;
     adminId?: number;
+    examId?: number;
 }
 
 export interface ApiResponse<T = any> {
