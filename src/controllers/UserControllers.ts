@@ -154,39 +154,18 @@ export const finishExam = async (req: AuthenticatedRequest, res: Response<ApiRes
     }
 
     // Calculate exam results using optimized query
-    const resultQuery = `
-      SELECT 
-        COUNT(q.questionId) as totalQuestions,
-        COUNT(CASE WHEN sa.selectedAnswer > 0 THEN 1 END) as questionsAnswered,
-        (COUNT(q.questionId) - COUNT(CASE WHEN sa.selectedAnswer > 0 THEN 1 END)) as notAnswered,
-        SUM(CASE WHEN sa.isCorrect = 1 AND sa.selectedAnswer > 0 THEN 1 ELSE 0 END) as correctAnswers,
-        SUM(CASE WHEN sa.isCorrect = 0 AND sa.selectedAnswer > 0 THEN 1 ELSE 0 END) as wrongAnswers,
-        (
-          (SUM(CASE WHEN sa.isCorrect = 1 AND sa.selectedAnswer > 0 THEN 1 ELSE 0 END) * 4) - 
-          (SUM(CASE WHEN sa.isCorrect = 0 AND sa.selectedAnswer > 0 THEN 1 ELSE 0 END) * 1)
-        ) as totalMarks
-      FROM questions q
-      LEFT JOIN student_answers sa ON q.questionId = sa.questionId 
-        AND sa.studentId = :userId 
-        AND sa.examId = :examId
-      WHERE q.examId = :examId AND q.isActive = 1
-    `;
-
-    const [results] = await sequelize.query(resultQuery, {
-      replacements: { examId: validExamId, userId },
-      type: QueryTypes.SELECT
-    }) as any[];
+    const results = await examService.calculateExamResults(examId, userId);
 
     // Update student exam status to completed
     await StudentExamService.updateStudentExamStatus(userId, validExamId, EXAM_STATUS.COMPLETED);
 
     // Send successful response with results
     ResponseUtils.successResponse(res, 'Exam completed successfully', {
-      questionsAnswered: parseInt(results.questionsAnswered) || 0,
-      notAnswered: parseInt(results.notAnswered) || 0,
-      correctAnswers: parseInt(results.correctAnswers) || 0,
-      wrongAnswers: parseInt(results.wrongAnswers) || 0,
-      totalMarks: parseInt(results.totalMarks) || 0
+      questionsAnswered: results.questionsAnswered || 0,
+      notAnswered: results.notAnswered || 0,
+      correctAnswers: results.correctAnswers || 0,
+      wrongAnswers: results.wrongAnswers || 0,
+      totalMarks: results.totalMarks || 0
     });
 
   } catch (error) {
