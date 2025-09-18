@@ -6,11 +6,13 @@ const router: Router = express.Router();
 import authRoutes from '../routes/authRoutes';
 import adminRoutes from '../routes/adminRoutes';
 import userRoutes from '../routes/userRoutes';
+import whatAppRoutes from '../routes/whatAppRoutes';
 
 // Use route modules
 router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
 router.use('/user', userRoutes);
+router.use('/whatsapp', whatAppRoutes);
 
 // Health check route
 router.get('/health', (req: Request, res: Response) => {

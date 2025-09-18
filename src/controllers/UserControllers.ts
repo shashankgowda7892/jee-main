@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Exam } from '../models';
+import { Exam, User, StudentExamResult } from '../models';
 import { verifyToken } from '../utils/jwtHelper';
 import { 
   ApiResponse, 
@@ -7,19 +7,20 @@ import {
   StartExamRequest, 
   SubmitAnswerRequest,
   FinishExamRequest,
+  StudentResultDto,
   ErrorCodes 
 } from '../types';
 import { Op, QueryTypes } from 'sequelize';
 import { EXAM_STATUS } from '../constants/ExamStatus';
-import { ValidationUtils } from '../utils/validationUtils';
 import { ResponseUtils } from '../utils/responseUtils';
 import { ServiceFactory } from '../utils/serviceFactory';
 import { StudentExamService } from '../services/studentExamService';
+import { WhatsAppService } from '../services/whatsappService';
 
 export const getUserExams = async (req: AuthenticatedRequest, res: Response<ApiResponse>): Promise<void> => {
   try {
     // Validate authentication
-    if (!ValidationUtils.validateAuth(req.user)) {
+    if (!req.user || !req.user.userId) {
       ResponseUtils.unauthorizedResponse(res, 'User not authenticated');
       return;
     }
@@ -44,15 +45,22 @@ export const getUserExams = async (req: AuthenticatedRequest, res: Response<ApiR
 export const startExam = async (req: AuthenticatedRequest, res: Response<ApiResponse>): Promise<void> => {
   try {
     // Validate authentication
-    if (!ValidationUtils.validateAuth(req.user)) {
+    if (!req.user || !req.user.userId) {
       ResponseUtils.unauthorizedResponse(res, 'User not authenticated');
       return;
     }
 
     // Validate request body
     const { examId }: StartExamRequest = req.body;
-    ValidationUtils.validateRequiredFields(req.body, ['examId']);
-    const validExamId = ValidationUtils.validatePositiveNumber(examId, 'examId');
+    if (!examId) {
+      ResponseUtils.badRequestResponse(res, 'Missing required field: examId');
+      return;
+    }
+
+    if (typeof examId !== 'number' || examId <= 0) {
+      ResponseUtils.badRequestResponse(res, 'examId must be a positive number');
+      return;
+    }
 
     const userId = req.user.userId;
 
@@ -61,7 +69,7 @@ export const startExam = async (req: AuthenticatedRequest, res: Response<ApiResp
     const questionService = ServiceFactory.getQuestionService();
 
     // Check if exam exists and is active
-    const exam = await examService.getActiveExam(validExamId);
+    const exam = await examService.getActiveExam(examId);
     if (!exam) {
       ResponseUtils.notFoundResponse(res, 'Exam not found or not active');
       return;
@@ -74,7 +82,7 @@ export const startExam = async (req: AuthenticatedRequest, res: Response<ApiResp
     }
 
     // Get or create student exam record
-    const existingStudentExam = await StudentExamService.getStudentExam(userId, validExamId);
+    const existingStudentExam = await StudentExamService.getStudentExam(userId, examId);
     
     if (existingStudentExam && existingStudentExam.status === EXAM_STATUS.COMPLETED) {
       ResponseUtils.badRequestResponse(res, 'Exam already completed');
@@ -82,10 +90,10 @@ export const startExam = async (req: AuthenticatedRequest, res: Response<ApiResp
     }
 
     // Start student exam if not already started
-    await StudentExamService.startStudentExam(userId, validExamId);
+    await StudentExamService.startStudentExam(userId, examId);
 
     // Get all questions with selected answers
-    const questions = await questionService.getAllQuestionsWithAnswers(validExamId, userId);
+    const questions = await questionService.getAllQuestionsWithAnswers(examId, userId);
     
     if (!questions || questions.length === 0) {
       ResponseUtils.notFoundResponse(res, 'No questions found for this exam');
@@ -103,24 +111,38 @@ export const startExam = async (req: AuthenticatedRequest, res: Response<ApiResp
 export const submitAnswer = async (req: AuthenticatedRequest, res: Response<ApiResponse>): Promise<void> => {
   try {
     // Validate authentication
-    if (!ValidationUtils.validateAuth(req.user)) {
+    if (!req.user || !req.user.userId) {
       ResponseUtils.unauthorizedResponse(res, 'User not authenticated');
       return;
     }
 
     // Validate request body
     const { examId, questionId, selectedAnswer }: SubmitAnswerRequest = req.body;
-    ValidationUtils.validateRequiredFields(req.body, ['examId', 'questionId', 'selectedAnswer']);
+    if (!examId || !questionId || typeof selectedAnswer !== 'number') {
+      ResponseUtils.badRequestResponse(res, 'Missing required fields: examId, questionId, selectedAnswer');
+      return;
+    }
     
-    const validExamId = ValidationUtils.validatePositiveNumber(examId, 'examId');
-    const validQuestionId = ValidationUtils.validatePositiveNumber(questionId, 'questionId');
-    const validAnswer = ValidationUtils.validateAnswer(selectedAnswer);
+    if (typeof examId !== 'number' || examId <= 0) {
+      ResponseUtils.badRequestResponse(res, 'examId must be a positive number');
+      return;
+    }
+
+    if (typeof questionId !== 'number' || questionId <= 0) {
+      ResponseUtils.badRequestResponse(res, 'questionId must be a positive number');
+      return;
+    }
+
+    if (selectedAnswer < 0 || selectedAnswer > 4) {
+      ResponseUtils.badRequestResponse(res, 'selectedAnswer must be between 0 and 4');
+      return;
+    }
 
     const userId = req.user.userId;
 
     // Use answer service to submit answer
     const answerService = ServiceFactory.getAnswerService();
-    await answerService.submitAnswer(userId, validExamId, validQuestionId, validAnswer);
+    await answerService.submitAnswer(userId, examId, questionId, selectedAnswer);
 
     ResponseUtils.successResponse(res, 'Answer submitted successfully');
 
@@ -133,33 +155,58 @@ export const submitAnswer = async (req: AuthenticatedRequest, res: Response<ApiR
 export const finishExam = async (req: AuthenticatedRequest, res: Response<ApiResponse>): Promise<void> => {
   try {
     // Validate authentication
-    if (!ValidationUtils.validateAuth(req.user)) {
+    if (!req.user || !req.user.userId) {
       ResponseUtils.unauthorizedResponse(res, 'User not authenticated');
       return;
     }
 
     // Validate request body
     const { examId }: FinishExamRequest = req.body;
-    ValidationUtils.validateRequiredFields(req.body, ['examId']);
-    const validExamId = ValidationUtils.validatePositiveNumber(examId, 'examId');
+    if (!examId) {
+      ResponseUtils.badRequestResponse(res, 'Missing required field: examId');
+      return;
+    }
 
-    const userId = req.user.userId;
+    const user = await User.findByPk(req.user.userId);
+    if (!user) {
+      ResponseUtils.notFoundResponse(res, 'User not found');
+      return;
+    }
 
     // Use exam service to validate exam
     const examService = ServiceFactory.getExamService();
-    const exam = await examService.getActiveExam(validExamId);
+    const exam = await examService.getActiveExam(examId);
     if (!exam) {
       ResponseUtils.notFoundResponse(res, 'Exam not found or not active');
       return;
     }
 
-    // Calculate exam results using optimized query
-    const results = await examService.calculateExamResults(examId, userId);
-
     // Update student exam status to completed
-    await StudentExamService.updateStudentExamStatus(userId, validExamId, EXAM_STATUS.COMPLETED);
+    await StudentExamService.updateStudentExamStatus(user.userId, examId, EXAM_STATUS.COMPLETED);
+    
+    // Calculate exam results using optimized query
+    const results = await examService.calculateExamResults(examId, user.userId);
 
-    // Send successful response with results
+    const studentResult: StudentResultDto = {
+      totalQuestions: exam.totalQuestions,
+      questionsAnswered: results.questionsAnswered,
+      notAnswered: results.notAnswered,
+      correctAnswers: results.correctAnswers,
+      wrongAnswers: results.wrongAnswers,
+      totalMarks: results.totalMarks
+    };
+
+    // Save Student Exam Result to database
+    await StudentExamResult.create({
+      studentId: user.userId,
+      examId: examId,
+      ...studentResult
+    });
+
+    //send whatsapp message
+    await WhatsAppService.sendWhatsAppResult(user.phone,user.userId,exam.examId,studentResult);    // Send successful response with results
+
+    // Response
     ResponseUtils.successResponse(res, 'Exam completed successfully', {
       questionsAnswered: results.questionsAnswered || 0,
       notAnswered: results.notAnswered || 0,
@@ -171,52 +218,5 @@ export const finishExam = async (req: AuthenticatedRequest, res: Response<ApiRes
   } catch (error) {
     console.error('Finish exam error:', error);
     ResponseUtils.handleUnknownError(res, error);
-  }
-};
-
-export const downloadResultPdf = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const token = req.query.token as string;
-    if (!token) {
-      res.status(ErrorCodes.UNAUTHORIZED).json({
-        success: false,
-        message: 'Authentication token is required'
-      });
-      return;
-    }
-
-
-    const decoded = verifyToken(token);
-
-    const userId = decoded?.userId;
-    const examId = decoded?.examId;
-
-    if (typeof userId !== 'number' || typeof examId !== 'number') {
-      res.status(ErrorCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'Invalid userId or examId in token'
-      });
-      return;
-    }
-
-    // Use exam service to generate PDF
-    const examService = ServiceFactory.getExamService();
-    const pdfBuffer = await examService.getResultPdfService(userId, examId);
-
-    // Set response headers for forced PDF download
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="exam-result-${examId}-${userId}.pdf"`);
-    res.setHeader('Content-Length', pdfBuffer.length);
-    res.setHeader('Cache-Control', 'no-cache');
-
-    // Send PDF buffer directly to force download
-    res.send(pdfBuffer);
-
-  } catch (error) {
-    console.error('Download result PDF error:', error);
-    res.status(ErrorCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: 'Failed to generate result PDF'
-    });
   }
 };

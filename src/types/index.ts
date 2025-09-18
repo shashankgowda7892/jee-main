@@ -22,10 +22,11 @@ export interface RedisConfig {
   password?: string;
 }
 
+export type UserRole = 'user' | 'admin' | 'teacher';
+
 export interface JWTPayload {
-    userId?: number;
-    adminId?: number;
-    examId?: number;
+    userId: number;
+    userType: UserRole;
 }
 
 export interface ApiResponse<T = any> {
@@ -43,7 +44,9 @@ export interface PaginationParams {
 
 export interface AuthenticatedRequest extends Request {
   user?: {
-      userId: number;
+    userId: number;
+    userType: UserRole;
+    userData?: any;
   };
 }
 
@@ -76,6 +79,15 @@ export interface QuestionDto {
 }
 
 export interface ExamResultDto {
+  questionsAnswered: number;
+  notAnswered: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  totalMarks: number;
+}
+
+export interface StudentResultDto {
+  totalQuestions: number;
   questionsAnswered: number;
   notAnswered: number;
   correctAnswers: number;

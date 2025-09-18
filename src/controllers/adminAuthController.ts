@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Admin } from '../models';
-import { generateToken } from '../utils/jwtHelper';
+import { generateAdminToken } from '../utils/jwtHelper';
 import { ApiResponse } from '../types';
 
 interface AdminLoginRequest {
@@ -47,18 +47,18 @@ export const adminLogin = async (req: Request<{}, ApiResponse, AdminLoginRequest
       return;
     }
 
-    const tokenPayload = {
-      adminId: admin.adminId
-    };
-
-    const token = generateToken(tokenPayload);
+    // Generate JWT token for admin using unified userId approach
+    const token = generateAdminToken(admin.adminId);
 
     res.status(200).json({
       success: true,
       message: 'Admin login successful',
       data: {
-        accessToken : token,
-        userId : admin.adminId
+        accessToken: token,
+        admin: {
+          adminId: admin.adminId,
+          emailId: admin.emailId
+        }
       }
     });
 

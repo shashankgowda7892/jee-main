@@ -8,6 +8,14 @@ export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string 
   return jwt.sign(payload as object, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as any });
 };
 
+export const generateUserToken = (userId: number): string => {
+  return generateToken({ userId, userType: 'user' });
+};
+
+export const generateAdminToken = (userId: number): string => {
+  return generateToken({ userId, userType: 'admin' });
+};
+
 export const verifyToken = (token: string): JWTPayload | null => {
   try {
     return jwt.verify(token, JWT_SECRET) as JWTPayload;

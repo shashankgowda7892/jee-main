@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { User } from '../models';
-import { generateToken } from '../utils/jwtHelper';
+import { generateUserToken } from '../utils/jwtHelper';
 import { ApiResponse } from '../types';
 
 interface LoginRequest {
@@ -58,12 +58,8 @@ export const login = async (req: Request<{}, ApiResponse, LoginRequest>, res: Re
     // Update last login timestamp
     await user.update({ lastLogin: new Date() });
 
-    // Generate JWT token
-    const tokenPayload = {
-      userId : user.userId
-    };
-
-    const token = generateToken(tokenPayload);
+    // Generate JWT token for user
+    const token = generateUserToken(user.userId);
 
     // Return success response
     res.status(200).json({

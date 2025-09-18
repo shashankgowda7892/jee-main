@@ -6,6 +6,7 @@ import Exam from '../models/Exam';
 import Question from '../models/Question';
 import StudentAnswer from '../models/StudentAnswer';
 import StudentExam from '../models/StudentExam';
+import { StudentExamResult } from '../models/StudentExamResult';
 
 export const syncModels = async (): Promise<void> => {
   try {
@@ -24,5 +25,6 @@ export {
   Question,
   StudentAnswer,
   StudentExam,
+  StudentExamResult,
   sequelize
 };
