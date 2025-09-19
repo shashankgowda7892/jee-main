@@ -103,6 +103,10 @@ export interface ExamDto {
   isActive: boolean;
 }
 
+export interface GetExamRequest {
+  examId: number;
+}
+
 // Error types
 export class AppError extends Error {
   public statusCode: number;

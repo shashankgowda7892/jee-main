@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { Readable } from 'stream';
 import csv from 'csv-parser';
-import { Op } from 'sequelize';
-import { User, Question, Exam } from '../models';
-import { ApiResponse } from '../types';
+import { Op, QueryTypes } from 'sequelize';
+import { User, Question, Exam, StudentExamResult } from '../models';
+import { ApiResponse, GetExamRequest } from '../types';
+import { ResponseUtils } from '@/utils/responseUtils';
 
 interface UploadQuestionsRequest {
   examCode: string;
@@ -172,6 +173,32 @@ export const updateExam = async (req: Request, res: Response<ApiResponse>): Prom
 
   } catch (error) {
     console.error('Error updating exam:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+export const getExamResult = async (req: Request, res: Response<ApiResponse>): Promise<void> => {
+  try {
+    const { examId }: GetExamRequest = req.body;
+
+    const query = `
+    select u.name,u.studentNumber,er.totalQuestions,er.correctAnswers,er.notAnswered,er.wrongAnswers,er.totalMarks from student_exam_results er
+    join users u on er.userId=u.userId
+    where er.examId=:examId
+    order by er.totalMarks desc`
+    
+     const results = await Question.sequelize?.query(query, {
+      replacements: { examId },
+      type: QueryTypes.SELECT
+     }) as [];
+    
+    ResponseUtils.successResponse(res, "Student Performance", results);
+
+  } catch (error) {
+    console.error('Error fetching exam results:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'

@@ -12,5 +12,6 @@ router.get('/users', allowOnly.admins(), adminController.getUsers);
 router.post('/questions/upload', allowOnly.admins(), upload.single('file'), adminController.uploadQuestions);
 router.get('/exams', allowOnly.admins(), adminController.getExams);
 router.post('/update/exam', allowOnly.admins(), adminController.updateExam);
+router.post('/exam/result', allowOnly.admins(), adminController.getExamResult);
 
 export default router;
