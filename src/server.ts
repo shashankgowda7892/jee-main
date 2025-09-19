@@ -4,7 +4,7 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import { connectDB } from './config/db';
-import { connectRedis } from './config/redis';
+// import { connectRedis } from './config/redis';
 import { syncModels } from './models';
 import routes from './routes';
 
@@ -34,7 +34,7 @@ const startServer = async (): Promise<void> => {
   try {
     await connectDB();
     await syncModels();
-    await connectRedis();
+    // await connectRedis();
 
     const PORT: number = parseInt(process.env.PORT || '3000', 10);
 

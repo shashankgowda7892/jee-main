@@ -197,14 +197,14 @@ export const finishExam = async (req: AuthenticatedRequest, res: Response<ApiRes
     };
 
     // Save Student Exam Result to database
-    await StudentExamResult.create({
+    await StudentExamResult.upsert({
       studentId: user.userId,
       examId: examId,
       ...studentResult
     });
 
     //send whatsapp message
-    await WhatsAppService.sendWhatsAppResult(user.phone,user.userId,exam.examId,studentResult);    // Send successful response with results
+    await WhatsAppService.sendWhatsAppResult(user.phone,user.userId,user.name,exam.examId,studentResult);    // Send successful response with results
 
     // Response
     ResponseUtils.successResponse(res, 'Exam completed successfully', {

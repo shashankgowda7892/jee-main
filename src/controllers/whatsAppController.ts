@@ -5,18 +5,14 @@ import { decodePayload } from '../utils/encodeDecode';
 
 export const verifyWebhook = (req: Request, res: Response) => {
     const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
-    const mode = req.query['hub.mode'];
-    const token = req.query['hub.verify_token'];
-    const challenge = req.query['hub.challenge'];
+   const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
 
-    if (mode && token) {
-        if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-            console.log('Webhook verified!');
-            res.status(200).send(challenge);
-        } else {
-            res.sendStatus(403);
-        }
-    }
+  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('WEBHOOK VERIFIED');
+    res.status(200).send(challenge);
+  } else {
+    res.status(403).end();
+  }
 }
 
 export const receiveMessage = async (req: Request, res: Response) => {
@@ -29,12 +25,10 @@ export const receiveMessage = async (req: Request, res: Response) => {
                 for (let msg of messages) {
                     const from = msg.from;
 
-                    if (msg.interactive?.button_reply?.id) {
-                        const payload = decodePayload(msg.interactive.button_reply.id);
+                    if (msg.button?.payload) {
+                        const payload = decodePayload(msg.button.payload);
                         const examId = payload.examId;
                         const studentId = payload.studentId;
-
-                        console.log(`Button clicked by ${from}, ExamID: ${examId}, StudentID: ${studentId}`);
 
                         const examService = ServiceFactory.getExamService();
                         const pdfBuffer = await examService.getResultPdfService(studentId, examId);

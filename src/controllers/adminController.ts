@@ -4,7 +4,7 @@ import csv from 'csv-parser';
 import { Op, QueryTypes } from 'sequelize';
 import { User, Question, Exam, StudentExamResult } from '../models';
 import { ApiResponse, GetExamRequest } from '../types';
-import { ResponseUtils } from '@/utils/responseUtils';
+import { ResponseUtils } from '../utils/responseUtils';
 
 interface UploadQuestionsRequest {
   examCode: string;
