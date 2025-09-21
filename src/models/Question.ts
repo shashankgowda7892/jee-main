@@ -4,7 +4,7 @@ import { sequelize } from '../config/db';
 interface QuestionAttributes {
   questionId: number;
   examId: number;
-  subject: string;
+  subject: number;
   question: string;
   option1: string;
   option2: string;
@@ -21,7 +21,7 @@ interface QuestionCreationAttributes extends Optional<QuestionAttributes, 'quest
 class Question extends Model<QuestionAttributes, QuestionCreationAttributes> implements QuestionAttributes {
   public questionId!: number;
   public examId!: number;
-  public subject!: string;
+  public subject!: number;
   public question!: string;
   public option1!: string;
   public option2!: string;
@@ -45,7 +45,7 @@ Question.init({
     allowNull: false,
   },
   subject: {
-    type: DataTypes.STRING(50),
+    type: DataTypes.INTEGER,
     allowNull: false,
   },
   question: {

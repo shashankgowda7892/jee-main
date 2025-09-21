@@ -14,6 +14,7 @@ interface UploadQuestionsRequest {
 }
 
 interface QuestionRow {
+  examId: number;
   Subject: string;
   Question: string;
   Option1: string;
@@ -45,6 +46,8 @@ export const getUsers = async (req: Request, res: Response<ApiResponse>): Promis
 
 export const uploadQuestions = async (req: Request, res: Response<ApiResponse>): Promise<void> => {
   try {
+
+    console.log(req.body);
     const { examCode, duration, totalQuestions, examDate }: UploadQuestionsRequest = req.body;
 
     if (!req.file) {
@@ -54,6 +57,15 @@ export const uploadQuestions = async (req: Request, res: Response<ApiResponse>):
       });
       return;
     }
+
+    // Create or update exam
+    const [exam] = await Exam.upsert({
+      examCode,
+      duration: parseInt(duration),
+      totalQuestions: parseInt(totalQuestions),
+      examDate: new Date(examDate),
+      isActive: true
+    });
     
     const bufferStream = new Readable();
     bufferStream.push(req.file.buffer);
@@ -65,7 +77,7 @@ export const uploadQuestions = async (req: Request, res: Response<ApiResponse>):
       .pipe(csv())
       .on("data", (row: QuestionRow) => {
         questions.push({
-          examCode,
+          examId: exam.examId,
           subject: row.Subject,
           question: row.Question,
           option1: row.Option1,
@@ -78,20 +90,12 @@ export const uploadQuestions = async (req: Request, res: Response<ApiResponse>):
       })
       .on("end", async () => {
         try {
-          // Create or update exam
-          await Exam.upsert({
-            examCode,
-            duration: parseInt(duration),
-            totalQuestions: parseInt(totalQuestions),
-            examDate: new Date(examDate),
-            isActive: true
-          });
-
           // Bulk create questions
           await Question.bulkCreate(questions, {
             updateOnDuplicate: ['subject', 'question', 'option1', 'option2', 'option3', 'option4', 'correctAnswer']
           });
 
+          
           res.status(200).json({
             success: true,
             message: `Successfully uploaded ${questions.length} questions for exam ${examCode}`,
@@ -144,9 +148,9 @@ export const getExams = async (req: Request, res: Response<ApiResponse>): Promis
   }
 };
 
-export const updateExam = async (req: Request, res: Response<ApiResponse>): Promise<void> => {
+export const  updateExam = async (req: Request, res: Response<ApiResponse>): Promise<void> => {
   try {
-    const { examId, examCode, duration, totalQuestions, examDate, isActive } = req.body;
+    const { examId, ...updateData } = req.body;
 
     const exam = await Exam.findByPk(examId);
     if (!exam) {
@@ -158,11 +162,7 @@ export const updateExam = async (req: Request, res: Response<ApiResponse>): Prom
     }
 
     await exam.update({
-      examCode,
-      duration,
-      totalQuestions,
-      examDate: new Date(examDate),
-      isActive
+      ...updateData
     });
 
     res.status(200).json({

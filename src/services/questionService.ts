@@ -3,6 +3,8 @@ import { IQuestionRepository, QuestionRepository } from '../repositories/questio
 
 export interface IQuestionService {
   getAllQuestionsWithAnswers(examId: number, userId: number): Promise<QuestionDto[]>;
+  getFirstQuestion(examId: number, userId: number): Promise<QuestionDto | null>;
+  getQuestion(examId: number, subjectNumber: number, questionNumber: number, userId: number): Promise<QuestionDto | null>;
 }
 
 export class QuestionService implements IQuestionService {
@@ -19,9 +21,34 @@ export class QuestionService implements IQuestionService {
     return await this.questionRepository.findQuestionsWithAnswers(examId, userId);
   }
 
+  /**
+   * Get first question of an exam with selected answer
+   */
+  async getFirstQuestion(examId: number, userId: number): Promise<QuestionDto | null> {
+    return await this.questionRepository.findFirstQuestion(examId, userId);
+  }
+
+  /**
+   * Get specific question by subject and question number
+   */
+  async getQuestion(examId: number, subjectNumber: number, questionNumber: number, userId: number): Promise<QuestionDto | null> {
+    return await this.questionRepository.findQuestion(examId, subjectNumber, questionNumber, userId);
+  }
+
   // Static method for backward compatibility
   static async getAllQuestionsWithAnswers(examId: number, userId: number): Promise<QuestionDto[]> {
     const service = new QuestionService();
     return await service.getAllQuestionsWithAnswers(examId, userId);
+  }
+
+  // Static methods for new functionality
+  static async getFirstQuestion(examId: number, userId: number): Promise<QuestionDto | null> {
+    const service = new QuestionService();
+    return await service.getFirstQuestion(examId, userId);
+  }
+
+  static async getQuestion(examId: number, subjectNumber: number, questionNumber: number, userId: number): Promise<QuestionDto | null> {
+    const service = new QuestionService();
+    return await service.getQuestion(examId, subjectNumber, questionNumber, userId);
   }
 }

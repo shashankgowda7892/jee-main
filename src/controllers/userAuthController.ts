@@ -11,7 +11,7 @@ interface LoginRequest {
 interface RegisterRequest {
   studentNumber: string;
   name: string;
-  phone: string;
+  phoneNumber: string;
   dateOfBirth: string;
 }
 
@@ -71,7 +71,7 @@ export const login = async (req: Request<{}, ApiResponse, LoginRequest>, res: Re
           userId: user.userId,
           studentNumber: user.studentNumber,
           name: user.name,
-          phone: user.phone,
+          phone: user.phoneNumber,
           dateOfBirth: user.dateOfBirth
         }
       }
@@ -89,10 +89,10 @@ export const login = async (req: Request<{}, ApiResponse, LoginRequest>, res: Re
 // Register method
 export const register = async (req: Request<{}, ApiResponse, RegisterRequest>, res: Response<ApiResponse>): Promise<void> => {
   try {
-    const { studentNumber, name, phone, dateOfBirth } = req.body;
+    const { studentNumber, name, phoneNumber, dateOfBirth } = req.body;
 
     // Validate input
-    if (!studentNumber || !name || !phone || !dateOfBirth) {
+    if (!studentNumber || !name || !phoneNumber  || !dateOfBirth) {
       res.status(400).json({
         success: false,
         message: 'All fields are required'
@@ -117,7 +117,7 @@ export const register = async (req: Request<{}, ApiResponse, RegisterRequest>, r
     await User.create({
       studentNumber,
       name,
-      phone,
+      phoneNumber,
       dateOfBirth: new Date(dateOfBirth)
     });
 

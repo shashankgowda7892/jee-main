@@ -3,7 +3,7 @@ import { sequelize } from '../config/db';
 
 interface StudentExamResultAttributes {
   resultId: number;
-  studentId: number;
+  userId: number;
   examId: number;
   totalQuestions: number;
   questionsAnswered: number;
@@ -21,7 +21,7 @@ interface StudentExamResultCreationAttributes
 export class StudentExamResult extends Model<StudentExamResultAttributes, StudentExamResultCreationAttributes> 
   implements StudentExamResultAttributes {
   public resultId!: number;
-  public studentId!: number;
+  public userId!: number;
   public examId!: number;
   public totalQuestions!: number;
   public questionsAnswered!: number;
@@ -41,7 +41,7 @@ StudentExamResult.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    studentId: {
+    userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -94,11 +94,11 @@ StudentExamResult.init(
     indexes: [
       {
         unique: true,
-        fields: ['studentId', 'examId'],
+        fields: ['userId', 'examId'],
         name: 'unique_student_exam_result'
       },
       {
-        fields: ['studentId']
+        fields: ['userId']
       },
       {
         fields: ['examId']

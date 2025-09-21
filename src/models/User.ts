@@ -5,7 +5,7 @@ interface UserAttributes {
   userId: number;
   studentNumber: string;
   name: string;
-  phone: string;
+  phoneNumber: string;
   dateOfBirth: Date;
   isActive: boolean;
   lastLogin?: Date;
@@ -19,7 +19,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public userId!: number;
   public studentNumber!: string;
   public name!: string;
-  public phone!: string;
+  public phoneNumber!: string;
   public dateOfBirth!: Date;
   public isActive!: boolean;
   public lastLogin?: Date;
@@ -43,7 +43,7 @@ User.init({
     type: DataTypes.STRING(100),
     allowNull: false
   },
-  phone: {
+  phoneNumber: {
     type: DataTypes.STRING(15),
     allowNull: false
   },
@@ -66,6 +66,9 @@ User.init({
   indexes: [
     {
       fields: ['studentNumber']
+    },
+    {
+      fields: ['userId']
     }
   ]
 });

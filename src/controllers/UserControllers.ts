@@ -57,11 +57,6 @@ export const startExam = async (req: AuthenticatedRequest, res: Response<ApiResp
       return;
     }
 
-    if (typeof examId !== 'number' || examId <= 0) {
-      ResponseUtils.badRequestResponse(res, 'examId must be a positive number');
-      return;
-    }
-
     const userId = req.user.userId;
 
     // Get service instances
@@ -92,18 +87,104 @@ export const startExam = async (req: AuthenticatedRequest, res: Response<ApiResp
     // Start student exam if not already started
     await StudentExamService.startStudentExam(userId, examId);
 
-    // Get all questions with selected answers
-    const questions = await questionService.getAllQuestionsWithAnswers(examId, userId);
+    // Get only the first question for exam start
+    const firstQuestion = await questionService.getFirstQuestion(examId, userId);
     
-    if (!questions || questions.length === 0) {
+    if (!firstQuestion) {
       ResponseUtils.notFoundResponse(res, 'No questions found for this exam');
       return;
     }
 
-    ResponseUtils.successResponse(res, 'Exam started successfully', questions);
+    ResponseUtils.successResponse(res, 'Exam started successfully', {
+      exam: {
+        examId: exam.examId,
+        examCode: exam.examCode,
+        totalQuestions: exam.totalQuestions,
+        duration: exam.duration
+      },
+      firstQuestion: firstQuestion
+    });
 
   } catch (error) {
     console.error('Start exam error:', error);
+    ResponseUtils.handleUnknownError(res, error);
+  }
+};
+
+export const getQuestion = async (req: AuthenticatedRequest, res: Response<ApiResponse>): Promise<void> => {
+  try {
+    // Validate authentication
+    if (!req.user || !req.user.userId) {
+      ResponseUtils.unauthorizedResponse(res, 'User not authenticated');
+      return;
+    }
+
+    // Get query parameters
+    const { examId, subject, question } = req.query;
+
+    // Validate required parameters
+    if (!examId || !subject || !question) {
+      ResponseUtils.badRequestResponse(res, 'Missing required query parameters: examId, subject, question');
+      return;
+    }
+
+    const examIdNum = parseInt(examId as string);
+    const subjectNum = parseInt(subject as string);
+    const questionNum = parseInt(question as string);
+
+    // Validate parameter types
+    if (isNaN(examIdNum) || examIdNum <= 0) {
+      ResponseUtils.badRequestResponse(res, 'examId must be a positive number');
+      return;
+    }
+
+    if (isNaN(subjectNum) || subjectNum <= 0) {
+      ResponseUtils.badRequestResponse(res, 'subject must be a positive number');
+      return;
+    }
+
+    if (isNaN(questionNum) || questionNum <= 0) {
+      ResponseUtils.badRequestResponse(res, 'question must be a positive number');
+      return;
+    }
+
+    const userId = req.user.userId;
+
+    // Get service instances
+    const examService = ServiceFactory.getExamService();
+    const questionService = ServiceFactory.getQuestionService();
+
+    // Check if exam exists and is active
+    const exam = await examService.getActiveExam(examIdNum);
+    if (!exam) {
+      ResponseUtils.notFoundResponse(res, 'Exam not found or not active');
+      return;
+    }
+
+    // Check if student has started the exam
+    const studentExam = await StudentExamService.getStudentExam(userId, examIdNum);
+    if (!studentExam) {
+      ResponseUtils.badRequestResponse(res, 'Please start the exam first');
+      return;
+    }
+
+    if (studentExam.status === EXAM_STATUS.COMPLETED) {
+      ResponseUtils.badRequestResponse(res, 'Exam already completed');
+      return;
+    }
+
+    // Get the specific question with answer (if already answered)
+    const lastAnsweredQuestion = await questionService.getQuestion(examIdNum, subjectNum, questionNum, userId);
+    
+    if (!lastAnsweredQuestion) {
+      ResponseUtils.notFoundResponse(res, 'Question not found');
+      return;
+    }
+
+    ResponseUtils.successResponse(res, 'Question retrieved successfully', lastAnsweredQuestion);
+
+  } catch (error) {
+    console.error('Get question error:', error);
     ResponseUtils.handleUnknownError(res, error);
   }
 };
@@ -139,6 +220,18 @@ export const submitAnswer = async (req: AuthenticatedRequest, res: Response<ApiR
     }
 
     const userId = req.user.userId;
+
+    // Check if student has started the exam and it's not completed
+    const studentExam = await StudentExamService.getStudentExam(userId, examId);
+    if (!studentExam) {
+      ResponseUtils.badRequestResponse(res, 'Please start the exam first');
+      return;
+    }
+
+    if (studentExam.status === EXAM_STATUS.COMPLETED) {
+      ResponseUtils.badRequestResponse(res, 'Exam already completed. Cannot submit answers.');
+      return;
+    }
 
     // Use answer service to submit answer
     const answerService = ServiceFactory.getAnswerService();
@@ -198,13 +291,13 @@ export const finishExam = async (req: AuthenticatedRequest, res: Response<ApiRes
 
     // Save Student Exam Result to database
     await StudentExamResult.upsert({
-      studentId: user.userId,
+      userId: user.userId,
       examId: examId,
       ...studentResult
     });
 
     //send whatsapp message
-    await WhatsAppService.sendWhatsAppResult(user.phone,user.userId,user.name,exam.examId,studentResult);    // Send successful response with results
+    await WhatsAppService.sendWhatsAppResult(user.phoneNumber,user.userId,user.name,exam.examId,studentResult);    // Send successful response with results
 
     // Response
     ResponseUtils.successResponse(res, 'Exam completed successfully', {

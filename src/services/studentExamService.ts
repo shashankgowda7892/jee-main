@@ -23,17 +23,12 @@ export class StudentExamService {
   /**
    * Create or update student exam record to ACTIVE status
    */
-  static async startStudentExam(userId: number, examId: number): Promise<StudentExam> {
+  static async startStudentExam(userId: number, examId: number): Promise<void> {
     try {
       const existingStudentExam = await this.getStudentExam(userId, examId);
 
       if (existingStudentExam) {
-        // Update existing record to active
-        await existingStudentExam.update({
-          status: EXAM_STATUS.ACTIVE,
-          startedAt: new Date()
-        });
-        return existingStudentExam;
+        return;
       } else {
         // Create new student exam record
         const newStudentExam = await StudentExam.create({
@@ -42,7 +37,7 @@ export class StudentExamService {
           status: EXAM_STATUS.ACTIVE,
           startedAt: new Date()
         });
-        return newStudentExam;
+        return;
       }
     } catch (error) {
       console.error('Error starting student exam:', error);
