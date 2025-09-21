@@ -1,0 +1,60 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [ master, main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        script: |
+          # Go to application directory
+          cd /home/ubuntu/jee-main
+          
+          # Pull latest code
+          git pull origin master
+          
+          # Install dependencies
+          npm install
+          
+          # Build the project
+          npm run build
+          
+          # Create environment file from secrets
+          echo '${{ secrets.ENV_FILE }}' > .env
+          chmod 600 .env
+          
+          # Restart application with PM2
+          pm2 restart jee-main || pm2 start dist/server.js --name jee-main
+          
+          # Save PM2 configuration
+          pm2 save
+          
+          # Show status
+          pm2 status
+          
+          echo "Deployment completed successfully!"
