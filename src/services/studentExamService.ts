@@ -65,23 +65,6 @@ export class StudentExamService {
   }
 
   /**
-   * Check if student has started the exam
-   */
-  static hasStudentStartedExam(studentExam: StudentExam | null): boolean {
-    return studentExam !== null && studentExam.status === EXAM_STATUS.ACTIVE;
-  }
-
-  /**
-   * Get student exam details for response
-   */
-  static getStudentExamDetails(studentExam: StudentExam) {
-    return {
-      status: studentExam.status,
-      startedAt: studentExam.startedAt
-    };
-  }
-
-  /**
    * Update student exam status
    */
   static async updateStudentExamStatus(userId: number, examId: number, status: number): Promise<void> {

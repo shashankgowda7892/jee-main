@@ -266,19 +266,4 @@ export class ExamService implements IExamService {
       isActive: exam.isActive
     };
   }
-
-  // Static methods for backward compatibility
-  static async getActiveExam(examId: number): Promise<Exam | null> {
-    try {
-      const service = new ExamService();
-      return await service.getActiveExam(examId);
-    } catch (error) {
-      return null;
-    }
-  }
-
-  static isExamAvailable(exam: Exam): boolean {
-    const service = new ExamService();
-    return service.isExamAvailable(exam);
-  }
 }
