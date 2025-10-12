@@ -26,9 +26,7 @@ interface QuestionRow {
 
 export const getUsers = async (req: Request, res: Response<ApiResponse>): Promise<void> => {
   try {
-    const users = await User.findAll({
-      attributes: ['userId', 'studentNumber', 'name', 'phone', 'dateOfBirth', 'isActive', 'lastLogin', 'createdAt']
-    });
+    const users = await User.findAll({});
 
     res.status(200).json({
       success: true,
@@ -182,7 +180,7 @@ export const  updateExam = async (req: Request, res: Response<ApiResponse>): Pro
 
 export const getExamResult = async (req: Request, res: Response<ApiResponse>): Promise<void> => {
   try {
-    const { examId }: GetExamRequest = req.body;
+    const { examId }: GetExamRequest = req.query as any;
 
     const query = `
     select u.name,u.studentNumber,er.totalQuestions,er.correctAnswers,er.notAnswered,er.wrongAnswers,er.totalMarks from student_exam_results er

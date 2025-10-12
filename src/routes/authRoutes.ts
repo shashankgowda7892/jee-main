@@ -11,6 +11,8 @@ router.post('/register', userAuthController.register);
 
 // Admin authentication
 router.post('/admin/login', adminAuthController.adminLogin);
-router.get('/admin/verify', allowOnly.admins());
+router.get('/admin/verify', allowOnly.admins(), (req, res) => {
+    res.json({ success: true });
+});
 
 export default router;
