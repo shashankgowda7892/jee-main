@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Exam, User, StudentExamResult } from '../models';
+import { Exam, User, StudentExamResult, StudentExam } from '../models';
 import { verifyToken } from '../utils/jwtHelper';
 import { 
   ApiResponse, 
@@ -19,23 +19,51 @@ import { WhatsAppService } from '../services/whatsappService';
 
 export const getUserExams = async (req: AuthenticatedRequest, res: Response<ApiResponse>): Promise<void> => {
   try {
-    // Validate authentication
-    if (!req.user || !req.user.userId) {
-      ResponseUtils.unauthorizedResponse(res, 'User not authenticated');
+    // Get userId from request user
+    const userId = req.user?.userId;
+
+    // Verify user exists
+    const user = await User.findByPk(userId);
+    if (!user) {
+      ResponseUtils.notFoundResponse(res, 'User not found');
       return;
     }
 
-    const now = new Date();
-    const exams = await Exam.findAll({
-      where: {
-        examDate: {
-          [Op.lte]: now
-        },
-        isActive: true
-      }
-    });
+    // Get current date for comparison (date only, no time)
+    const currentDate = new Date();
+    const today = currentDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
-    ResponseUtils.successResponse(res, 'Exams retrieved successfully', exams);
+    // Single SQL query to get exams with completion status
+    const query = `
+      SELECT 
+        e.examId,
+        e.examCode,
+        e.examDate,
+        e.duration,
+        e.totalQuestions,
+        CASE 
+          WHEN DATE(e.examDate) < :currentDate THEN true
+          WHEN se.status = 2 THEN true
+          ELSE false
+        END as is_completed,
+        COALESCE(se.startedAt, 0) as startedAt
+      FROM exams e
+      LEFT JOIN student_exams se ON e.examId = se.examId AND se.userId = :userId
+      WHERE DATE(e.examDate) <= :currentDate 
+        AND e.isActive = 1
+      ORDER BY e.examId DESC
+      LIMIT 5
+    `;
+
+    const results = await Exam.sequelize?.query(query, {
+      replacements: { 
+        userId: userId,
+        currentDate: today 
+      },
+      type: QueryTypes.SELECT
+    }) as any[];
+
+    ResponseUtils.successResponse(res, 'Exams retrieved successfully', results);
   } catch (error) {
     console.error('Get user exams error:', error);
     ResponseUtils.serverErrorResponse(res, 'Failed to retrieve exams');
@@ -44,11 +72,6 @@ export const getUserExams = async (req: AuthenticatedRequest, res: Response<ApiR
 
 export const startExam = async (req: AuthenticatedRequest, res: Response<ApiResponse>): Promise<void> => {
   try {
-    // Validate authentication
-    if (!req.user || !req.user.userId) {
-      ResponseUtils.unauthorizedResponse(res, 'User not authenticated');
-      return;
-    }
 
     // Validate request body
     const { examId }: StartExamRequest = req.body;
@@ -57,7 +80,11 @@ export const startExam = async (req: AuthenticatedRequest, res: Response<ApiResp
       return;
     }
 
-    const userId = req.user.userId;
+    const userId = req.user?.userId;
+    if (typeof userId !== 'number') {
+      ResponseUtils.unauthorizedResponse(res, 'User not authenticated');
+      return;
+    }
 
     // Get service instances
     const examService = ServiceFactory.getExamService();
@@ -297,7 +324,7 @@ export const finishExam = async (req: AuthenticatedRequest, res: Response<ApiRes
     });
 
     //send whatsapp message
-    await WhatsAppService.sendWhatsAppResult(user.phoneNumber,user.userId,user.name,exam.examId,studentResult);    // Send successful response with results
+    // await WhatsAppService.sendWhatsAppResult(user.phoneNumber,user.userId,user.name,exam.examId,studentResult);    // Send successful response with results
 
     // Response
     ResponseUtils.successResponse(res, 'Exam completed successfully', {
