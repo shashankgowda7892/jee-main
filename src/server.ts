@@ -1,11 +1,3 @@
-/**
- * JEE Main Exam API Server
- * Main server configuration and startup
- */
-
-// Configure timezone BEFORE any other imports
-import './config/timezone';
-
 // Load environment variables
 import { config } from 'dotenv';
 config();
@@ -72,7 +64,6 @@ const startServer = async (): Promise<void> => {
     app.listen(PORT, () => {
       console.log(`🌟 Server running on http://localhost:${PORT}`);
       console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🕐 Timezone: ${process.env.TZ || 'UTC'}`);
     });
     
   } catch (error) {
