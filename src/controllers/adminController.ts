@@ -72,39 +72,68 @@ export const uploadQuestions = async (req: Request, res: Response<ApiResponse>):
     const questions: any[] = [];
 
     bufferStream
-      .pipe(csv())
+      .pipe(csv({
+        separator: ',',
+        quote: '"',
+        escape: '"'
+      }))
       .on("data", (row: QuestionRow) => {
+        // Validate and clean the data
+        if (!row.Subject || !row.Question || !row.Option1 || !row.Option2 || 
+            !row.Option3 || !row.Option4 || !row.CorrectAnswer) {
+          console.warn('Skipping row with missing data:', row);
+          return;
+        }
+
+        // Validate correct answer
+        const correctAnswer = parseInt(row.CorrectAnswer);
+        if (isNaN(correctAnswer) || correctAnswer < 1 || correctAnswer > 4) {
+          console.warn('Skipping row with invalid correct answer:', row.CorrectAnswer);
+          return;
+        }
+
         questions.push({
           examId: exam.examId,
-          subject: row.Subject,
-          question: row.Question,
-          option1: row.Option1,
-          option2: row.Option2,
-          option3: row.Option3,
-          option4: row.Option4,
-          correctAnswer: parseInt(row.CorrectAnswer),
+          subject: row.Subject.trim(),
+          question: row.Question.trim(),
+          option1: row.Option1.trim(),
+          option2: row.Option2.trim(),
+          option3: row.Option3.trim(),
+          option4: row.Option4.trim(),
+          correctAnswer: correctAnswer,
           isActive: true
         });
       })
       .on("end", async () => {
         try {
+          if (questions.length === 0) {
+            res.status(400).json({
+              success: false,
+              message: 'No valid questions found in the CSV file. Please check the format and ensure all required fields are present.'
+            });
+            return;
+          }
+
           // Bulk create questions
           await Question.bulkCreate(questions, {
             updateOnDuplicate: ['subject', 'question', 'option1', 'option2', 'option3', 'option4', 'correctAnswer']
           });
 
-          
           res.status(200).json({
             success: true,
             message: `Successfully uploaded ${questions.length} questions for exam ${examCode}`,
-            data: { uploadedCount: questions.length }
+            data: { 
+              uploadedCount: questions.length,
+              examId: exam.examId,
+              examCode: examCode
+            }
           });
 
         } catch (dbError) {
           console.error('Database error:', dbError);
           res.status(500).json({
             success: false,
-            message: 'Error saving questions to database'
+            message: 'Error saving questions to database: ' + (dbError as Error).message
           });
         }
       })
@@ -112,7 +141,8 @@ export const uploadQuestions = async (req: Request, res: Response<ApiResponse>):
         console.error('CSV parsing error:', csvError);
         res.status(400).json({
           success: false,
-          message: 'Error parsing CSV file'
+          message: 'Error parsing CSV file. Please ensure the file is properly formatted with quoted fields containing commas.',
+          error: csvError.message
         });
       });
 
